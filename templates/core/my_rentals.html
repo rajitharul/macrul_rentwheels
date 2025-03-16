@@ -5,172 +5,234 @@
 
 {% block content %}
 <div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Home</a></li>
-            <li class="breadcrumb-item active">My Rentals</li>
-        </ol>
-    </nav>
-
-    <h1 class="mb-4">My Rentals</h1>
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="mb-3">My Rentals</h1>
+            <div class="alert alert-info">
+                <strong>Total Rentals:</strong> {{ total_rentals }}
+            </div>
+        </div>
+    </div>
 
     <!-- Active Rentals -->
-    <section class="mb-5">
-        <h2 class="h4 mb-4">Active Rentals</h2>
-        <div class="row">
-            {% with has_active=False %}
-                {% for rental in rentals %}
-                    {% if rental.status == 'active' or rental.status == 'confirmed' %}
-                        {% with has_active=True %}
-                        <div class="col-md-6 col-lg-4 mb-4">
-                            <div class="card h-100">
-                                {% if rental.vehicle.image %}
-                                    <img src="{{ rental.vehicle.image.url }}" class="card-img-top" alt="{{ rental.vehicle.name }}">
-                                {% else %}
-                                    <img src="{% static 'img/default-car.jpg' %}" class="card-img-top" alt="{{ rental.vehicle.name }}">
-                                {% endif %}
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ rental.vehicle.name }}</h5>
-                                    <p class="card-text">
-                                        <small class="text-muted">{{ rental.vehicle.make }} {{ rental.vehicle.model }}</small>
-                                    </p>
-                                    <div class="mb-3">
-                                        <span class="badge bg-{{ rental.status }}">{{ rental.status|title }}</span>
-                                    </div>
-                                    <p class="mb-1">
-                                        <strong>Start:</strong> {{ rental.start_date|date:"F j, Y" }}
-                                    </p>
-                                    <p class="mb-1">
-                                        <strong>End:</strong> {{ rental.end_date|date:"F j, Y" }}
-                                    </p>
-                                    <p class="mb-1">
-                                        <strong>Total Cost:</strong> ${{ rental.total_cost }}
-                                    </p>
-                                </div>
-                                <div class="card-footer bg-transparent border-top-0">
-                                    <div class="d-grid">
-                                        <a href="{% url 'core:rental_detail' rental.pk %}" class="btn btn-primary">View Details</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endwith %}
-                    {% endif %}
-                {% endfor %}
-                {% if not has_active %}
-                    <div class="col">
-                        <div class="text-center py-4">
-                            <i class="fas fa-car fa-3x text-muted mb-3"></i>
-                            <h5>No Active Rentals</h5>
-                            <p class="text-muted">You don't have any active rentals at the moment.</p>
-                            <a href="{% url 'core:vehicle_list' %}" class="btn btn-primary">Browse Vehicles</a>
-                        </div>
-                    </div>
-                {% endif %}
-            {% endwith %}
+    <div class="card mb-4">
+        <div class="card-header bg-white">
+            <h2 class="h5 mb-0">Active & Pending Rentals</h2>
         </div>
-    </section>
+        <div class="card-body">
+            {% if active_rentals %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Rental ID</th>
+                                <th>Vehicle</th>
+                                <th>Dates</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rental in active_rentals %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ rental.rental_id }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'core:vehicle_detail' rental.vehicle.pk %}">
+                                            {{ rental.vehicle.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            From: {{ rental.start_date|date:"M d, Y" }}<br>
+                                            To: {{ rental.end_date|date:"M d, Y" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if rental.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif rental.status == 'approved' %}
+                                            <span class="badge bg-success">Approved</span>
+                                        {% elif rental.status == 'active' %}
+                                            <span class="badge bg-info">Active</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#rentalModal{{ rental.id }}">
+                                                View Details
+                                            </button>
+                                            {% if rental.status == 'pending' %}
+                                                <a href="{% url 'core:cancel_rental' rental.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to cancel this rental?')">
+                                                    Cancel
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
 
-    <!-- Past Rentals -->
-    <section>
-        <h2 class="h4 mb-4">Past Rentals</h2>
-        <div class="row">
-            {% with has_past=False %}
-                {% for rental in rentals %}
-                    {% if rental.status == 'completed' or rental.status == 'cancelled' %}
-                        {% with has_past=True %}
-                        <div class="col-md-6 col-lg-4 mb-4">
-                            <div class="card h-100">
-                                {% if rental.vehicle.image %}
-                                    <img src="{{ rental.vehicle.image.url }}" class="card-img-top" alt="{{ rental.vehicle.name }}">
-                                {% else %}
-                                    <img src="{% static 'img/default-car.jpg' %}" class="card-img-top" alt="{{ rental.vehicle.name }}">
-                                {% endif %}
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ rental.vehicle.name }}</h5>
-                                    <p class="card-text">
-                                        <small class="text-muted">{{ rental.vehicle.make }} {{ rental.vehicle.model }}</small>
-                                    </p>
-                                    <div class="mb-3">
-                                        <span class="badge bg-{{ rental.status }}">{{ rental.status|title }}</span>
-                                    </div>
-                                    <p class="mb-1">
-                                        <strong>Period:</strong><br>
-                                        {{ rental.start_date|date:"F j, Y" }} - {{ rental.end_date|date:"F j, Y" }}
-                                    </p>
-                                    <p class="mb-1">
-                                        <strong>Total Cost:</strong> ${{ rental.total_cost }}
-                                    </p>
-                                    {% if rental.review %}
-                                        <div class="mt-3">
-                                            <strong>Your Rating:</strong>
-                                            <div class="rating">
-                                                {% for i in "12345" %}
-                                                    <i class="fas fa-star {% if i <= rental.review.rating %}text-warning{% endif %}"></i>
-                                                {% endfor %}
+                                <!-- Rental Details Modal -->
+                                <div class="modal fade" id="rentalModal{{ rental.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Rental Details - {{ rental.rental_id }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p><strong>Vehicle:</strong> {{ rental.vehicle.name }}</p>
+                                                <p><strong>Start Date:</strong> {{ rental.start_date }}</p>
+                                                <p><strong>End Date:</strong> {{ rental.end_date }}</p>
+                                                <p><strong>Pickup Location:</strong> {{ rental.pickup_location }}</p>
+                                                <p><strong>Dropoff Location:</strong> {{ rental.dropoff_location }}</p>
+                                                <p><strong>Status:</strong> {{ rental.get_status_display }}</p>
+                                                <p><strong>Daily Rate:</strong> ${{ rental.vehicle.daily_rate }}</p>
+                                                {% if rental.status == 'pending' %}
+                                                    <div class="alert alert-info">
+                                                        Your rental request is being reviewed. We'll notify you once it's approved.
+                                                    </div>
+                                                {% endif %}
                                             </div>
                                         </div>
-                                    {% endif %}
-                                </div>
-                                <div class="card-footer bg-transparent border-top-0">
-                                    <div class="d-grid gap-2">
-                                        <a href="{% url 'core:rental_detail' rental.pk %}" class="btn btn-primary">View Details</a>
-                                        {% if rental.status == 'completed' and not rental.review %}
-                                            <a href="{% url 'core:add_review' rental.pk %}" class="btn btn-outline-primary">Leave Review</a>
-                                        {% endif %}
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        {% endwith %}
-                    {% endif %}
-                {% endfor %}
-                {% if not has_past %}
-                    <div class="col">
-                        <div class="text-center py-4">
-                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
-                            <h5>No Past Rentals</h5>
-                            <p class="text-muted">You haven't completed any rentals yet.</p>
-                        </div>
-                    </div>
-                {% endif %}
-            {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                    <h5>No Active Rentals</h5>
+                    <p class="text-muted">You don't have any active rentals at the moment.</p>
+                    <a href="{% url 'core:vehicle_list' %}" class="btn btn-primary">Browse Vehicles</a>
+                </div>
+            {% endif %}
         </div>
-    </section>
+    </div>
+
+    <!-- Past Rentals -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <h2 class="h5 mb-0">Past Rentals</h2>
+        </div>
+        <div class="card-body">
+            {% if past_rentals %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Rental ID</th>
+                                <th>Vehicle</th>
+                                <th>Dates</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rental in past_rentals %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ rental.rental_id }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'core:vehicle_detail' rental.vehicle.pk %}">
+                                            {{ rental.vehicle.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            From: {{ rental.start_date|date:"M d, Y" }}<br>
+                                            To: {{ rental.end_date|date:"M d, Y" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if rental.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif rental.status == 'cancelled' %}
+                                            <span class="badge bg-danger">Cancelled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#rentalModal{{ rental.id }}">
+                                                View Details
+                                            </button>
+                                            {% if rental.status == 'completed' and not rental.review %}
+                                                <a href="{% url 'core:add_review' rental.pk %}" class="btn btn-sm btn-outline-primary">
+                                                    Add Review
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Rental Details Modal -->
+                                <div class="modal fade" id="rentalModal{{ rental.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Rental Details - {{ rental.rental_id }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p><strong>Vehicle:</strong> {{ rental.vehicle.name }}</p>
+                                                <p><strong>Start Date:</strong> {{ rental.start_date }}</p>
+                                                <p><strong>End Date:</strong> {{ rental.end_date }}</p>
+                                                <p><strong>Pickup Location:</strong> {{ rental.pickup_location }}</p>
+                                                <p><strong>Dropoff Location:</strong> {{ rental.dropoff_location }}</p>
+                                                <p><strong>Status:</strong> {{ rental.get_status_display }}</p>
+                                                <p><strong>Daily Rate:</strong> ${{ rental.vehicle.daily_rate }}</p>
+                                                {% if rental.review %}
+                                                    <div class="mt-3">
+                                                        <h6>Your Review</h6>
+                                                        <div class="rating mb-2">
+                                                            {% for i in "12345" %}
+                                                                <i class="fas fa-star {% if i <= rental.review.rating %}text-warning{% endif %}"></i>
+                                                            {% endfor %}
+                                                        </div>
+                                                        <p class="font-italic">{{ rental.review.comment }}</p>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                    <h5>No Past Rentals</h5>
+                    <p class="text-muted">You haven't completed any rentals yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
-{% endblock %}
 
 {% block extra_css %}
 <style>
-    .card {
-        transition: transform 0.2s;
+    .badge {
+        font-size: 0.9em;
+        padding: 0.5em 1em;
     }
-    
-    .card:hover {
-        transform: translateY(-5px);
+    .table td {
+        vertical-align: middle;
     }
-    
-    .card-img-top {
-        height: 200px;
-        object-fit: cover;
+    .btn-group .btn {
+        margin: 0 2px;
     }
-    
     .rating {
-        color: #ccc;
+        color: #ddd;
     }
-    
     .rating .text-warning {
         color: #ffc107 !important;
     }
-    
-    .badge {
-        padding: 0.5rem 1rem;
-    }
-    
-    .badge.bg-pending { background-color: #FEF3C7 !important; color: #92400E !important; }
-    .badge.bg-confirmed { background-color: #BFDBFE !important; color: #1E40AF !important; }
-    .badge.bg-active { background-color: #A7F3D0 !important; color: #065F46 !important; }
-    .badge.bg-completed { background-color: #D1FAE5 !important; color: #064E3B !important; }
-    .badge.bg-cancelled { background-color: #FEE2E2 !important; color: #991B1B !important; }
 </style>
-{% endblock %} 
+{% endblock %}
+
+{% endblock %}

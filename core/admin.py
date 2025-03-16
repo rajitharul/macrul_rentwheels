@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Vehicle, Driver, Rental, Review
+from .models import Vehicle, Driver, Rental, Review, GuestRental
 
 @admin.register(Vehicle)
 class VehicleAdmin(admin.ModelAdmin):
@@ -25,3 +25,14 @@ class ReviewAdmin(admin.ModelAdmin):
     list_display = ('rental', 'rating', 'created_at')
     list_filter = ('rating', 'created_at')
     search_fields = ('rental__customer__username', 'comment')
+
+@admin.register(GuestRental)
+class GuestRentalAdmin(admin.ModelAdmin):
+    list_display = ('full_name', 'email', 'phone_number', 'vehicle', 'start_date', 'end_date', 'status', 'total_cost', 'confirmation_code')
+    list_filter = ('status', 'start_date', 'end_date')
+    search_fields = ('full_name', 'email', 'phone_number', 'confirmation_code', 'vehicle__name')
+    readonly_fields = ('confirmation_code', 'total_cost')
+    list_per_page = 20
+    
+    def get_ordering(self, request):
+        return ['-start_date']  # Most recent rentals first

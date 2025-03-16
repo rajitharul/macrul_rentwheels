@@ -4,8 +4,22 @@ from django.contrib import messages
 from django.db.models import Q
 from django.utils import timezone
 from django.contrib.auth.models import User
-from .models import Vehicle, Rental, Review
-from .forms import RentalForm, ReviewForm, ProfileForm, VehicleForm
+from django.contrib.auth import login, get_user_model
+from django.contrib.auth import authenticate
+import random
+import string
+import logging
+from .models import Vehicle, Rental, Review, GuestRental
+from .forms import RentalForm, ReviewForm, ProfileForm, VehicleForm, GuestRentalForm
+
+logger = logging.getLogger(__name__)
+
+def generate_rental_id():
+    chars = string.ascii_uppercase + string.digits
+    while True:
+        rental_id = ''.join(random.choices(chars, k=6))
+        if not Rental.objects.filter(rental_id=rental_id).exists():
+            return rental_id
 
 def home(request):
     featured_vehicles = Vehicle.objects.filter(is_available=True)[:6]
@@ -49,28 +63,111 @@ def vehicle_list(request):
 
 def vehicle_detail(request, pk):
     vehicle = get_object_or_404(Vehicle, pk=pk)
-    form = RentalForm()
+    rental_form = RentalForm()
+    guest_form = GuestRentalForm()
     
-    if request.method == 'POST' and request.user.is_authenticated:
-        form = RentalForm(request.POST)
-        if form.is_valid():
-            rental = form.save(commit=False)
-            rental.customer = request.user
-            rental.vehicle = vehicle
-            rental.save()
-            messages.success(request, 'Rental request submitted successfully!')
-            return redirect('core:rental_detail', pk=rental.pk)
+    if request.method == 'POST':
+        if request.user.is_authenticated:
+            form = RentalForm(request.POST)
+            if form.is_valid():
+                rental = form.save(commit=False)
+                rental.customer = request.user
+                rental.vehicle = vehicle
+                rental.rental_id = generate_rental_id()
+                rental.save()
+                messages.success(request, f'Rental request submitted successfully! Your Rental ID is: {rental.rental_id}')
+                return redirect('core:vehicle_detail', pk=vehicle.pk)
+        else:
+            form = GuestRentalForm(request.POST)
+            print("Form data:", request.POST)  # Debug print
+            
+            if form.is_valid():
+                print("Form is valid")  # Debug print
+                try:
+                    # Check if user already exists
+                    phone_number = form.cleaned_data['phone_number']
+                    if User.objects.filter(username=phone_number).exists():
+                        messages.error(request, 'An account with this phone number already exists. Please login first.')
+                        return redirect('core:vehicle_detail', pk=vehicle.pk)
+                    
+                    print("Creating user...")  # Debug print
+                    # Create new user account
+                    full_name = form.cleaned_data['full_name']
+                    first_name = full_name.split()[0] if full_name else ''
+                    last_name = ' '.join(full_name.split()[1:]) if full_name and len(full_name.split()) > 1 else ''
+                    
+                    user = User.objects.create_user(
+                        username=phone_number,
+                        email=form.cleaned_data.get('email', ''),
+                        password=form.cleaned_data.get('password', ''),
+                        first_name=first_name,
+                        last_name=last_name
+                    )
+                    print("User created:", user)  # Debug print
+                    
+                    # Create rental with rental ID
+                    rental_id = generate_rental_id()
+                    rental = Rental.objects.create(
+                        customer=user,
+                        vehicle=vehicle,
+                        start_date=form.cleaned_data['start_date'],
+                        end_date=form.cleaned_data['end_date'],
+                        pickup_location=form.cleaned_data.get('pickup_location', ''),
+                        dropoff_location=form.cleaned_data.get('dropoff_location', ''),
+                        status='pending',
+                        rental_id=rental_id
+                    )
+                    print("Rental created:", rental)  # Debug print
+                    
+                    # Authenticate and log in the user
+                    authenticated_user = authenticate(
+                        request,
+                        username=phone_number,
+                        password=form.cleaned_data.get('password', '')
+                    )
+                    if authenticated_user:
+                        login(request, authenticated_user)
+                        messages.success(request, 'Success! Your rental has been submitted.\n' + 
+                                               f'Rental ID: {rental_id}\n' +
+                                               f'Login Phone: {phone_number}')
+                    else:
+                        messages.warning(request, 'Account created but login failed. Please login manually.')
+                    return redirect('core:vehicle_detail', pk=vehicle.pk)
+                except Exception as e:
+                    print("Error:", str(e))  # Debug print
+                    logger.error(f"Error creating rental: {str(e)}")
+                    messages.error(request, str(e))  # Show the actual error
+                    return redirect('core:vehicle_detail', pk=vehicle.pk)
+            else:
+                print("Form errors:", form.errors)  # Debug print
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"{field}: {error}")
+                return redirect('core:vehicle_detail', pk=vehicle.pk)
     
     return render(request, 'core/vehicle_detail.html', {
         'vehicle': vehicle,
-        'form': form
+        'rental_form': rental_form,
+        'guest_form': guest_form
     })
 
 @login_required
 def my_rentals(request):
-    rentals = Rental.objects.filter(customer=request.user).order_by('-created_at')
+    # Get all rentals for the user, ordered by most recent first
+    rentals = Rental.objects.filter(
+        customer=request.user
+    ).select_related(
+        'vehicle'  # Optimize by fetching vehicle data in same query
+    ).order_by('-created_at')
+    
+    # Split rentals by status
+    active_rentals = [r for r in rentals if r.status in ['pending', 'approved', 'active']]
+    past_rentals = [r for r in rentals if r.status in ['completed', 'cancelled']]
+    
     return render(request, 'core/my_rentals.html', {
-        'rentals': rentals
+        'active_rentals': active_rentals,
+        'past_rentals': past_rentals,
+        'total_rentals': len(rentals)
     })
 
 @login_required
@@ -95,16 +192,13 @@ def cancel_rental(request, pk):
 
 @login_required
 def profile(request):
-    rentals = Rental.objects.filter(customer=request.user)
-    total_rentals = rentals.count()
-    active_rentals = rentals.filter(status='active').count()
-    completed_rentals = rentals.filter(status='completed').count()
+    rentals = Rental.objects.filter(customer=request.user).order_by('-created_at')
     
-    return render(request, 'core/profile.html', {
-        'total_rentals': total_rentals,
-        'active_rentals': active_rentals,
-        'completed_rentals': completed_rentals
-    })
+    context = {
+        'rentals': rentals,
+        'user': request.user
+    }
+    return render(request, 'core/profile.html', context)
 
 @login_required
 def edit_profile(request):
@@ -191,53 +285,65 @@ def admin_dashboard(request):
         messages.error(request, 'You do not have permission to access the admin dashboard.')
         return redirect('core:home')
     
-    # Get statistics
-    pending_rentals_count = Rental.objects.filter(status='pending').count()
-    active_rentals_count = Rental.objects.filter(status='active').count()
     total_vehicles = Vehicle.objects.count()
-    total_users = User.objects.count()
+    available_vehicles = Vehicle.objects.filter(is_available=True).count()
+    total_rentals = Rental.objects.count()
+    pending_rentals = Rental.objects.filter(status='pending').count()
+    pending_guest_rentals = GuestRental.objects.filter(status='pending').count()
     
-    # Get recent rentals
-    recent_rentals = Rental.objects.all().order_by('-created_at')[:5]
-    
-    # Get available vehicles
-    available_vehicles = Vehicle.objects.filter(is_available=True)[:5]
-    
-    return render(request, 'core/admin_dashboard.html', {
-        'pending_rentals_count': pending_rentals_count,
-        'active_rentals_count': active_rentals_count,
+    context = {
         'total_vehicles': total_vehicles,
-        'total_users': total_users,
-        'recent_rentals': recent_rentals,
         'available_vehicles': available_vehicles,
-    })
+        'total_rentals': total_rentals,
+        'pending_rentals': pending_rentals,
+        'pending_guest_rentals': pending_guest_rentals,
+    }
+    
+    return render(request, 'core/admin/dashboard.html', context)
 
 @login_required
 def admin_rentals(request):
     if not request.user.is_staff:
-        messages.error(request, 'You do not have permission to access this page.')
+        messages.error(request, 'You do not have permission to access rental management.')
         return redirect('core:home')
     
-    status = request.GET.get('status', '')
-    search = request.GET.get('search', '')
-    
     rentals = Rental.objects.all().order_by('-created_at')
+    guest_rentals = GuestRental.objects.all().order_by('-created_at')
     
+    # Filter rentals
+    status = request.GET.get('status')
     if status:
         rentals = rentals.filter(status=status)
+        guest_rentals = guest_rentals.filter(status=status)
     
-    if search:
-        rentals = rentals.filter(
-            Q(customer__first_name__icontains=search) |
-            Q(customer__last_name__icontains=search) |
-            Q(vehicle__name__icontains=search)
-        )
-    
-    return render(request, 'core/admin_rentals.html', {
+    context = {
         'rentals': rentals,
-        'current_status': status,
-        'search_query': search,
-    })
+        'guest_rentals': guest_rentals,
+        'title': 'Manage Rentals'
+    }
+    
+    return render(request, 'core/admin/rentals.html', context)
+
+@login_required
+def manage_guest_rental(request, pk):
+    if not request.user.is_staff:
+        messages.error(request, 'You do not have permission to manage guest rentals.')
+        return redirect('core:home')
+    
+    guest_rental = get_object_or_404(GuestRental, pk=pk)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'approve':
+            guest_rental.status = 'confirmed'
+            guest_rental.save()
+            messages.success(request, f'Guest rental {guest_rental.confirmation_code} has been approved.')
+        elif action == 'reject':
+            guest_rental.status = 'cancelled'
+            guest_rental.save()
+            messages.success(request, f'Guest rental {guest_rental.confirmation_code} has been rejected.')
+    
+    return redirect('core:admin_rentals')
 
 @login_required
 def admin_vehicles(request):
@@ -307,3 +413,25 @@ def toggle_vehicle(request, pk):
     
     messages.success(request, f'Vehicle {vehicle.name} has been marked as {"available" if vehicle.is_available else "unavailable"}.')
     return redirect('core:admin_vehicles')
+
+def guest_rental_confirmation(request, code):
+    guest_rental = get_object_or_404(GuestRental, confirmation_code=code)
+    return render(request, 'core/guest_rental_confirmation.html', {
+        'rental': guest_rental
+    })
+
+def check_guest_rental(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        confirmation_code = request.POST.get('confirmation_code')
+        
+        try:
+            guest_rental = GuestRental.objects.get(
+                email=email,
+                confirmation_code=confirmation_code
+            )
+            return redirect('core:guest_rental_confirmation', code=guest_rental.confirmation_code)
+        except GuestRental.DoesNotExist:
+            messages.error(request, 'No rental found with the provided email and confirmation code.')
+    
+    return render(request, 'core/check_guest_rental.html')

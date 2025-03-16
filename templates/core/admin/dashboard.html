@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard - RentWheels{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Admin Dashboard</h2>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <!-- Vehicles Stats -->
+        <div class="col-md-4 mb-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Vehicles</h5>
+                    <p class="display-4">{{ total_vehicles }}</p>
+                    <p class="mb-0">Available: {{ available_vehicles }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Regular Rentals Stats -->
+        <div class="col-md-4 mb-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Regular Rentals</h5>
+                    <p class="display-4">{{ total_rentals }}</p>
+                    <p class="mb-0">Pending: {{ pending_rentals }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guest Rentals Stats -->
+        <div class="col-md-4 mb-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Guest Rentals</h5>
+                    <p class="display-4">{{ pending_guest_rentals }}</p>
+                    <p class="mb-0">Pending Approval</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'core:admin_rentals' %}" class="btn btn-primary btn-block w-100">
+                                Manage Rentals
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'core:admin_vehicles' %}" class="btn btn-success btn-block w-100">
+                                Manage Vehicles
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'core:register_vehicle' %}" class="btn btn-info btn-block w-100">
+                                Add New Vehicle
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'admin:index' %}" class="btn btn-secondary btn-block w-100">
+                                Django Admin
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

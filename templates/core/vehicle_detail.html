@@ -1,136 +1,136 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load crispy_forms_tags %}
 
 {% block title %}{{ vehicle.name }} - RentWheels{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'core:vehicle_list' %}">Vehicles</a></li>
-            <li class="breadcrumb-item active">{{ vehicle.name }}</li>
-        </ol>
-    </nav>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message|linebreaksbr }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
 
     <div class="row">
-        <!-- Vehicle Images -->
-        <div class="col-lg-6 mb-4">
+        <!-- Vehicle Details -->
+        <div class="col-md-6">
             <div class="card">
-                {% if vehicle.image %}
-                    <img src="{{ vehicle.image.url }}" class="img-fluid rounded" alt="{{ vehicle.name }}">
-                {% else %}
-                    <img src="{% static 'img/default-car.jpg' %}" class="img-fluid rounded" alt="{{ vehicle.name }}">
-                {% endif %}
+                <div class="card-body">
+                    <h2 class="card-title">{{ vehicle.name }}</h2>
+                    {% if vehicle.image %}
+                        <img src="{{ vehicle.image.url }}" alt="{{ vehicle.name }}" class="img-fluid mb-3">
+                    {% endif %}
+                    <p class="lead">{{ vehicle.make }} {{ vehicle.model }} {{ vehicle.year }}</p>
+                    <p><strong>Type:</strong> {{ vehicle.get_vehicle_type_display }}</p>
+                    <p><strong>Daily Rate:</strong> ${{ vehicle.daily_rate }}</p>
+                    <p><strong>Status:</strong> {% if vehicle.is_available %}<span class="text-success">Available</span>{% else %}<span class="text-danger">Not Available</span>{% endif %}</p>
+                    <p>{{ vehicle.description }}</p>
+                </div>
             </div>
         </div>
 
-        <!-- Vehicle Details -->
-        <div class="col-lg-6">
-            <h1 class="mb-3">{{ vehicle.name }}</h1>
-            <div class="d-flex align-items-center mb-3">
-                <span class="badge {% if vehicle.is_available %}bg-success{% else %}bg-danger{% endif %} me-2">
-                    {% if vehicle.is_available %}Available{% else %}Not Available{% endif %}
-                </span>
-                <span class="text-muted">{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</span>
-            </div>
-
-            <h3 class="text-primary mb-3">${{ vehicle.daily_rate }}/day</h3>
-
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Vehicle Details</h5>
-                    <table class="table table-borderless">
-                        <tr>
-                            <th>Type:</th>
-                            <td>{{ vehicle.get_vehicle_type_display }}</td>
-                        </tr>
-                        <tr>
-                            <th>Make:</th>
-                            <td>{{ vehicle.make }}</td>
-                        </tr>
-                        <tr>
-                            <th>Model:</th>
-                            <td>{{ vehicle.model }}</td>
-                        </tr>
-                        <tr>
-                            <th>Year:</th>
-                            <td>{{ vehicle.year }}</td>
-                        </tr>
-                        <tr>
-                            <th>License Plate:</th>
-                            <td>{{ vehicle.license_plate }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Description</h5>
-                    <p class="card-text">{{ vehicle.description }}</p>
-                </div>
-            </div>
-
+        <!-- Rental Form -->
+        <div class="col-md-6">
             {% if vehicle.is_available %}
-                {% if user.is_authenticated %}
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Book This Vehicle</h5>
-                            <form method="post" id="rental-form">
-                                {% csrf_token %}
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label for="start_date" class="form-label">Start Date</label>
-                                        {{ form.start_date }}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="end_date" class="form-label">End Date</label>
-                                        {{ form.end_date }}
-                                    </div>
-                                    <div class="col-12">
-                                        <label for="pickup_location" class="form-label">Pickup Location</label>
-                                        {{ form.pickup_location }}
-                                    </div>
-                                    <div class="col-12">
-                                        <label for="dropoff_location" class="form-label">Drop-off Location</label>
-                                        {{ form.dropoff_location }}
-                                    </div>
-                                    <div class="col-12">
-                                        <input type="hidden" id="daily_rate" value="{{ vehicle.daily_rate }}">
-                                        <p class="mb-2">Total Cost: $<span id="total_cost">0.00</span></p>
-                                        <button type="submit" class="btn btn-primary">Book Now</button>
-                                    </div>
+                <div class="card">
+                    <div class="card-body">
+                        <ul class="nav nav-tabs mb-3" id="rentalTabs" role="tablist">
+                            {% if user.is_authenticated %}
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="regular-tab" data-bs-toggle="tab" href="#regular" role="tab">Regular Rental</a>
+                                </li>
+                            {% else %}
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="guest-tab" data-bs-toggle="tab" href="#guest" role="tab">Create Account & Rent</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="login-tab" href="{% url 'account_login' %}">Login</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+
+                        <div class="tab-content" id="rentalTabsContent">
+                            {% if user.is_authenticated %}
+                                <div class="tab-pane fade show active" id="regular" role="tabpanel">
+                                    <h4>Book This Vehicle</h4>
+                                    <form method="post" novalidate>
+                                        {% csrf_token %}
+                                        {{ rental_form|crispy }}
+                                        <button type="submit" class="btn btn-primary">Submit Rental Request</button>
+                                    </form>
                                 </div>
-                            </form>
+                            {% else %}
+                                <div class="tab-pane fade show active" id="guest" role="tabpanel">
+                                    <h4>Create Account & Rent</h4>
+                                    <p class="text-muted mb-3">Create an account using your phone number to track your rentals.</p>
+                                    <form method="post" novalidate>
+                                        {% csrf_token %}
+                                        <div class="mb-3">
+                                            {{ guest_form.full_name|as_crispy_field }}
+                                        </div>
+                                        <div class="mb-3">
+                                            {{ guest_form.email|as_crispy_field }}
+                                        </div>
+                                        <div class="mb-3">
+                                            {{ guest_form.phone_number|as_crispy_field }}
+                                        </div>
+                                        <div class="mb-3">
+                                            {{ guest_form.password|as_crispy_field }}
+                                        </div>
+                                        <div class="mb-3">
+                                            {{ guest_form.start_date|as_crispy_field }}
+                                        </div>
+                                        <div class="mb-3">
+                                            {{ guest_form.end_date|as_crispy_field }}
+                                        </div>
+                                        <div class="mb-3">
+                                            {{ guest_form.pickup_location|as_crispy_field }}
+                                        </div>
+                                        <div class="mb-3">
+                                            {{ guest_form.dropoff_location|as_crispy_field }}
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Create Account & Submit Rental</button>
+                                    </form>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
-                {% else %}
-                    <div class="alert alert-info">
-                        Please <a href="{% url 'account_login' %}">login</a> or <a href="{% url 'account_signup' %}">register</a> to book this vehicle.
-                    </div>
-                {% endif %}
+                </div>
             {% else %}
                 <div class="alert alert-warning">
-                    This vehicle is currently not available for booking.
+                    This vehicle is currently not available for rental.
                 </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+{% block extra_css %}
+<style>
+    .alert {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+    .alert-success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+    }
+    .alert-danger {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+    .alert br {
+        content: "";
+        margin: 0.5em;
+        display: block;
+    }
+</style>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-    // Initialize date inputs with today's date as minimum
-    document.addEventListener('DOMContentLoaded', function() {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('start_date').min = today;
-        document.getElementById('end_date').min = today;
-    });
-
-    // Update total cost when dates change
-    document.getElementById('start_date').addEventListener('change', updateTotalPrice);
-    document.getElementById('end_date').addEventListener('change', updateTotalPrice);
-</script>
-{% endblock %} 
+{% endblock %}

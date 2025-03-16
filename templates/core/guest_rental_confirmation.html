@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rental Confirmation - RentWheels{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 48px;"></i>
+                        <h2 class="mt-3">Booking Confirmed!</h2>
+                        <p class="text-muted">Your rental request has been received and confirmed.</p>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Important:</strong> Please save your confirmation code:
+                        <div class="h4 text-center my-3">{{ rental.confirmation_code }}</div>
+                        You'll need this code to check your rental status.
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Rental Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>Vehicle:</th>
+                                    <td>{{ rental.vehicle.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Full Name:</th>
+                                    <td>{{ rental.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Email:</th>
+                                    <td>{{ rental.email }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Phone:</th>
+                                    <td>{{ rental.phone_number }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Start Date:</th>
+                                    <td>{{ rental.start_date|date:"F j, Y, g:i a" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>End Date:</th>
+                                    <td>{{ rental.end_date|date:"F j, Y, g:i a" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Pickup Location:</th>
+                                    <td>{{ rental.pickup_location }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Drop-off Location:</th>
+                                    <td>{{ rental.dropoff_location }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Total Cost:</th>
+                                    <td>${{ rental.total_cost }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td><span class="badge bg-{{ rental.status|yesno:'success,warning' }}">{{ rental.get_status_display }}</span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <p class="mb-3">Need to check your rental status later?</p>
+                        <a href="{% url 'core:check_guest_rental' %}" class="btn btn-primary">Check Rental Status</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

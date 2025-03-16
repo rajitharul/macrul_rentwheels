@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Rentals - RentWheels{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Manage Rentals</h2>
+
+    <!-- Status Filter -->
+    <div class="mb-4">
+        <form method="get" class="form-inline">
+            <div class="form-group">
+                <label for="status" class="mr-2">Filter by Status:</label>
+                <select name="status" id="status" class="form-control" onchange="this.form.submit()">
+                    <option value="">All</option>
+                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="confirmed" {% if request.GET.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Guest Rentals Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Guest Rentals</h4>
+        </div>
+        <div class="card-body">
+            {% if guest_rentals %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Guest Name</th>
+                            <th>Email</th>
+                            <th>Vehicle</th>
+                            <th>Dates</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rental in guest_rentals %}
+                        <tr>
+                            <td>{{ rental.id }}</td>
+                            <td>{{ rental.full_name }}</td>
+                            <td>{{ rental.email }}</td>
+                            <td>{{ rental.vehicle }}</td>
+                            <td>
+                                {{ rental.start_date|date:"M d, Y" }} -<br>
+                                {{ rental.end_date|date:"M d, Y" }}
+                            </td>
+                            <td>
+                                <span class="badge {% if rental.status == 'pending' %}bg-warning{% elif rental.status == 'confirmed' %}bg-success{% elif rental.status == 'cancelled' %}bg-danger{% else %}bg-info{% endif %}">
+                                    {{ rental.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if rental.status == 'pending' %}
+                                <form method="post" action="{% url 'core:manage_guest_rental' rental.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="approve">
+                                    <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                                </form>
+                                <form method="post" action="{% url 'core:manage_guest_rental' rental.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reject">
+                                    <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No guest rentals found.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Regular Rentals Section -->
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h4 class="mb-0">Regular User Rentals</h4>
+        </div>
+        <div class="card-body">
+            {% if rentals %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer</th>
+                            <th>Vehicle</th>
+                            <th>Dates</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rental in rentals %}
+                        <tr>
+                            <td>{{ rental.id }}</td>
+                            <td>{{ rental.customer.get_full_name }}</td>
+                            <td>{{ rental.vehicle }}</td>
+                            <td>
+                                {{ rental.start_date|date:"M d, Y" }} -<br>
+                                {{ rental.end_date|date:"M d, Y" }}
+                            </td>
+                            <td>
+                                <span class="badge {% if rental.status == 'pending' %}bg-warning{% elif rental.status == 'confirmed' %}bg-success{% elif rental.status == 'cancelled' %}bg-danger{% else %}bg-info{% endif %}">
+                                    {{ rental.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if rental.status == 'pending' %}
+                                <a href="{% url 'core:confirm_rental' rental.pk %}" class="btn btn-success btn-sm">Confirm</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No regular rentals found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

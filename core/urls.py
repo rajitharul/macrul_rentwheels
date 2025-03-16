@@ -16,10 +16,15 @@ urlpatterns = [
     path('rentals/<int:pk>/review/', views.add_review, name='add_review'),
     path('vehicles/register/', views.register_vehicle, name='register_vehicle'),
     
+    # Guest rental URLs
+    path('guest-rental/<str:code>/', views.guest_rental_confirmation, name='guest_rental_confirmation'),
+    path('check-rental/', views.check_guest_rental, name='check_guest_rental'),
+    path('guest-rental/<int:pk>/manage/', views.manage_guest_rental, name='manage_guest_rental'),
+    
     # Management URLs
     path('management/dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('management/rentals/', views.admin_rentals, name='admin_rentals'),
     path('management/vehicles/', views.admin_vehicles, name='admin_vehicles'),
     path('management/vehicles/<int:pk>/edit/', views.edit_vehicle, name='edit_vehicle'),
     path('management/vehicles/<int:pk>/toggle/', views.toggle_vehicle, name='toggle_vehicle'),
-] 
+]

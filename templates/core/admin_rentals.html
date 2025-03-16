@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Rentals - RentWheels{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Manage Rentals</h1>
+        <a href="{% url 'core:admin_dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Filter by Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="confirmed" {% if current_status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                        <option value="active" {% if current_status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Search by customer or vehicle...">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rentals Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer</th>
+                            <th>Vehicle</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Total Cost</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rental in rentals %}
+                        <tr>
+                            <td>#{{ rental.id }}</td>
+                            <td>{{ rental.customer.get_full_name }}</td>
+                            <td>{{ rental.vehicle.name }}</td>
+                            <td>{{ rental.start_date|date:"M d, Y" }}</td>
+                            <td>{{ rental.end_date|date:"M d, Y" }}</td>
+                            <td>${{ rental.total_cost }}</td>
+                            <td>
+                                <span class="badge rental-status {{ rental.status }}">
+                                    {{ rental.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'core:rental_detail' rental.pk %}" 
+                                       class="btn btn-sm btn-info">View</a>
+                                    {% if rental.status == 'pending' %}
+                                    <form method="post" action="{% url 'core:confirm_rental' rental.pk %}" 
+                                          class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success">Confirm</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">No rentals found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .rental-status {
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        font-weight: bold;
+    }
+    
+    .rental-status.pending { background-color: #FEF3C7; color: #92400E; }
+    .rental-status.confirmed { background-color: #BFDBFE; color: #1E40AF; }
+    .rental-status.active { background-color: #A7F3D0; color: #065F46; }
+    .rental-status.completed { background-color: #D1FAE5; color: #064E3B; }
+    .rental-status.cancelled { background-color: #FEE2E2; color: #991B1B; }
+</style>
+{% endblock %} 

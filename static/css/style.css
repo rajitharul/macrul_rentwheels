@@ -1,0 +1,134 @@
+/* Global Styles */
+:root {
+    --primary-color: #3B82F6;
+    --secondary-color: #6B7280;
+    --background-color: #F9FAFB;
+    --text-color: #1F2937;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    color: var(--text-color);
+    background-color: var(--background-color);
+}
+
+/* Navigation */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Cards */
+.card {
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #2563EB;
+    border-color: #2563EB;
+}
+
+/* Forms */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+/* Vehicle List */
+.vehicle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.vehicle-card {
+    height: 100%;
+}
+
+.vehicle-card .card-footer {
+    background: none;
+    border-top: none;
+}
+
+/* Rental Details */
+.rental-status {
+    font-weight: bold;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.rental-status.pending { background-color: #FEF3C7; }
+.rental-status.confirmed { background-color: #BFDBFE; }
+.rental-status.active { background-color: #A7F3D0; }
+.rental-status.completed { background-color: #D1FAE5; }
+.rental-status.cancelled { background-color: #FEE2E2; }
+
+/* Reviews */
+.rating {
+    color: #F59E0B;
+}
+
+.review-card {
+    border-left: 4px solid var(--primary-color);
+}
+
+/* Profile */
+.profile-header {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .vehicle-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .profile-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* Utility Classes */
+.text-primary { color: var(--primary-color) !important; }
+.bg-primary { background-color: var(--primary-color) !important; }
+.text-secondary { color: var(--secondary-color) !important; }
+.bg-light { background-color: var(--background-color) !important; } 

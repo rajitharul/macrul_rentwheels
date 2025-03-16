@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Profile - RentWheels{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="profile-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-3">{{ user.get_full_name|default:user.username }}</h1>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-envelope me-2"></i>{{ user.email }}
+                </p>
+                <p class="text-muted">
+                    <i class="fas fa-calendar me-2"></i>Member since {{ user.date_joined|date:"F Y" }}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'core:edit_profile' %}" class="btn btn-primary">
+                    <i class="fas fa-edit me-2"></i>Edit Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="card-title">{{ total_rentals }}</h3>
+                    <p class="card-text text-muted">Total Rentals</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="card-title">{{ active_rentals }}</h3>
+                    <p class="card-text text-muted">Active Rentals</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="card-title">{{ completed_rentals }}</h3>
+                    <p class="card-text text-muted">Completed Rentals</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="active-tab" data-bs-toggle="tab" href="#active" role="tab">
+                        Active Rentals
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="history-tab" data-bs-toggle="tab" href="#history" role="tab">
+                        Rental History
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="reviews-tab" data-bs-toggle="tab" href="#reviews" role="tab">
+                        My Reviews
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content">
+                <!-- Active Rentals -->
+                <div class="tab-pane fade show active" id="active" role="tabpanel">
+                    {% for rental in rentals %}
+                        {% if rental.status == 'active' or rental.status == 'confirmed' %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            {% if rental.vehicle.image %}
+                                                <img src="{{ rental.vehicle.image.url }}" class="img-fluid rounded" alt="{{ rental.vehicle.name }}">
+                                            {% else %}
+                                                <img src="{% static 'img/default-car.jpg' %}" class="img-fluid rounded" alt="{{ rental.vehicle.name }}">
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-9">
+                                            <h5 class="card-title">{{ rental.vehicle.name }}</h5>
+                                            <p class="card-text">
+                                                <small class="text-muted">{{ rental.vehicle.make }} {{ rental.vehicle.model }}</small>
+                                            </p>
+                                            <p class="mb-1">
+                                                <strong>Start:</strong> {{ rental.start_date|date:"F j, Y" }}
+                                            </p>
+                                            <p class="mb-1">
+                                                <strong>End:</strong> {{ rental.end_date|date:"F j, Y" }}
+                                            </p>
+                                            <p class="mb-1">
+                                                <strong>Status:</strong> 
+                                                <span class="badge bg-{{ rental.status }}">{{ rental.status|title }}</span>
+                                            </p>
+                                            <a href="{% url 'core:rental_detail' rental.pk %}" class="btn btn-primary btn-sm mt-2">
+                                                View Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% empty %}
+                        <p class="text-center text-muted my-4">No active rentals</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Rental History -->
+                <div class="tab-pane fade" id="history" role="tabpanel">
+                    {% for rental in rentals %}
+                        {% if rental.status == 'completed' or rental.status == 'cancelled' %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            {% if rental.vehicle.image %}
+                                                <img src="{{ rental.vehicle.image.url }}" class="img-fluid rounded" alt="{{ rental.vehicle.name }}">
+                                            {% else %}
+                                                <img src="{% static 'img/default-car.jpg' %}" class="img-fluid rounded" alt="{{ rental.vehicle.name }}">
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-9">
+                                            <h5 class="card-title">{{ rental.vehicle.name }}</h5>
+                                            <p class="card-text">
+                                                <small class="text-muted">{{ rental.vehicle.make }} {{ rental.vehicle.model }}</small>
+                                            </p>
+                                            <p class="mb-1">
+                                                <strong>Period:</strong> 
+                                                {{ rental.start_date|date:"F j, Y" }} - {{ rental.end_date|date:"F j, Y" }}
+                                            </p>
+                                            <p class="mb-1">
+                                                <strong>Status:</strong> 
+                                                <span class="badge bg-{{ rental.status }}">{{ rental.status|title }}</span>
+                                            </p>
+                                            <p class="mb-1">
+                                                <strong>Total Cost:</strong> ${{ rental.total_cost }}
+                                            </p>
+                                            <a href="{% url 'core:rental_detail' rental.pk %}" class="btn btn-primary btn-sm mt-2">
+                                                View Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% empty %}
+                        <p class="text-center text-muted my-4">No rental history</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Reviews -->
+                <div class="tab-pane fade" id="reviews" role="tabpanel">
+                    {% for rental in rentals %}
+                        {% if rental.review %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="card-title">{{ rental.vehicle.name }}</h5>
+                                            <p class="card-text">
+                                                <small class="text-muted">Rented on {{ rental.start_date|date:"F j, Y" }}</small>
+                                            </p>
+                                        </div>
+                                        <div class="rating">
+                                            {% for i in "12345" %}
+                                                <i class="fas fa-star {% if i <= rental.review.rating %}text-warning{% endif %}"></i>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <p class="card-text mt-3">{{ rental.review.comment }}</p>
+                                    <small class="text-muted">Posted on {{ rental.review.created_at|date:"F j, Y" }}</small>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% empty %}
+                        <p class="text-center text-muted my-4">No reviews yet</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background-color: white;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-tabs .nav-link {
+        color: var(--text-color);
+    }
+
+    .nav-tabs .nav-link.active {
+        color: var(--primary-color);
+        font-weight: bold;
+    }
+
+    .badge.bg-pending { background-color: #FEF3C7; color: #92400E; }
+    .badge.bg-confirmed { background-color: #BFDBFE; color: #1E40AF; }
+    .badge.bg-active { background-color: #A7F3D0; color: #065F46; }
+    .badge.bg-completed { background-color: #D1FAE5; color: #064E3B; }
+    .badge.bg-cancelled { background-color: #FEE2E2; color: #991B1B; }
+</style>
+{% endblock %} 

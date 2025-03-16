@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Vehicles - RentWheels{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Manage Vehicles</h1>
+        <div>
+            <a href="{% url 'core:admin_dashboard' %}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'core:register_vehicle' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Vehicle
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="type" class="form-label">Vehicle Type</label>
+                    <select name="type" id="type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="sedan" {% if current_type == 'sedan' %}selected{% endif %}>Sedan</option>
+                        <option value="suv" {% if current_type == 'suv' %}selected{% endif %}>SUV</option>
+                        <option value="van" {% if current_type == 'van' %}selected{% endif %}>Van</option>
+                        <option value="truck" {% if current_type == 'truck' %}selected{% endif %}>Truck</option>
+                        <option value="luxury" {% if current_type == 'luxury' %}selected{% endif %}>Luxury</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="available" class="form-label">Availability</label>
+                    <select name="available" id="available" class="form-select">
+                        <option value="">All</option>
+                        <option value="true" {% if current_availability == 'true' %}selected{% endif %}>Available</option>
+                        <option value="false" {% if current_availability == 'false' %}selected{% endif %}>Not Available</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Search by name, make, or model...">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vehicles Grid -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for vehicle in vehicles %}
+        <div class="col">
+            <div class="card h-100">
+                {% if vehicle.image %}
+                    <img src="{{ vehicle.image.url }}" class="card-img-top" alt="{{ vehicle.name }}"
+                         style="height: 200px; object-fit: cover;">
+                {% else %}
+                    <img src="{% static 'img/default-car.jpg' %}" class="card-img-top" alt="{{ vehicle.name }}"
+                         style="height: 200px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ vehicle.name }}</h5>
+                    <p class="card-text text-muted">{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</p>
+                    <div class="mb-3">
+                        <span class="badge {% if vehicle.is_available %}bg-success{% else %}bg-danger{% endif %}">
+                            {% if vehicle.is_available %}Available{% else %}Not Available{% endif %}
+                        </span>
+                        <span class="badge bg-info">{{ vehicle.get_vehicle_type_display }}</span>
+                        <span class="badge bg-primary">${{ vehicle.daily_rate }}/day</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'core:vehicle_detail' vehicle.pk %}" class="btn btn-sm btn-info">View</a>
+                        <a href="{% url 'core:edit_vehicle' vehicle.pk %}" class="btn btn-sm btn-warning">Edit</a>
+                        <form method="post" action="{% url 'core:toggle_vehicle' vehicle.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm {% if vehicle.is_available %}btn-danger{% else %}btn-success{% endif %}">
+                                {% if vehicle.is_available %}Mark Unavailable{% else %}Mark Available{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">No vehicles found matching your criteria.</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

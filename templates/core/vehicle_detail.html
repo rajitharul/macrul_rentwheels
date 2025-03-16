@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ vehicle.name }} - RentWheels{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'core:vehicle_list' %}">Vehicles</a></li>
+            <li class="breadcrumb-item active">{{ vehicle.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Vehicle Images -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                {% if vehicle.image %}
+                    <img src="{{ vehicle.image.url }}" class="img-fluid rounded" alt="{{ vehicle.name }}">
+                {% else %}
+                    <img src="{% static 'img/default-car.jpg' %}" class="img-fluid rounded" alt="{{ vehicle.name }}">
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Vehicle Details -->
+        <div class="col-lg-6">
+            <h1 class="mb-3">{{ vehicle.name }}</h1>
+            <div class="d-flex align-items-center mb-3">
+                <span class="badge {% if vehicle.is_available %}bg-success{% else %}bg-danger{% endif %} me-2">
+                    {% if vehicle.is_available %}Available{% else %}Not Available{% endif %}
+                </span>
+                <span class="text-muted">{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</span>
+            </div>
+
+            <h3 class="text-primary mb-3">${{ vehicle.daily_rate }}/day</h3>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Vehicle Details</h5>
+                    <table class="table table-borderless">
+                        <tr>
+                            <th>Type:</th>
+                            <td>{{ vehicle.get_vehicle_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <th>Make:</th>
+                            <td>{{ vehicle.make }}</td>
+                        </tr>
+                        <tr>
+                            <th>Model:</th>
+                            <td>{{ vehicle.model }}</td>
+                        </tr>
+                        <tr>
+                            <th>Year:</th>
+                            <td>{{ vehicle.year }}</td>
+                        </tr>
+                        <tr>
+                            <th>License Plate:</th>
+                            <td>{{ vehicle.license_plate }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Description</h5>
+                    <p class="card-text">{{ vehicle.description }}</p>
+                </div>
+            </div>
+
+            {% if vehicle.is_available %}
+                {% if user.is_authenticated %}
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Book This Vehicle</h5>
+                            <form method="post" id="rental-form">
+                                {% csrf_token %}
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="start_date" class="form-label">Start Date</label>
+                                        {{ form.start_date }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="end_date" class="form-label">End Date</label>
+                                        {{ form.end_date }}
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="pickup_location" class="form-label">Pickup Location</label>
+                                        {{ form.pickup_location }}
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="dropoff_location" class="form-label">Drop-off Location</label>
+                                        {{ form.dropoff_location }}
+                                    </div>
+                                    <div class="col-12">
+                                        <input type="hidden" id="daily_rate" value="{{ vehicle.daily_rate }}">
+                                        <p class="mb-2">Total Cost: $<span id="total_cost">0.00</span></p>
+                                        <button type="submit" class="btn btn-primary">Book Now</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        Please <a href="{% url 'account_login' %}">login</a> or <a href="{% url 'account_signup' %}">register</a> to book this vehicle.
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-warning">
+                    This vehicle is currently not available for booking.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize date inputs with today's date as minimum
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('start_date').min = today;
+        document.getElementById('end_date').min = today;
+    });
+
+    // Update total cost when dates change
+    document.getElementById('start_date').addEventListener('change', updateTotalPrice);
+    document.getElementById('end_date').addEventListener('change', updateTotalPrice);
+</script>
+{% endblock %} 

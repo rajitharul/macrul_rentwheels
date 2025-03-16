@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Rentals - RentWheels{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Home</a></li>
+            <li class="breadcrumb-item active">My Rentals</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">My Rentals</h1>
+
+    <!-- Active Rentals -->
+    <section class="mb-5">
+        <h2 class="h4 mb-4">Active Rentals</h2>
+        <div class="row">
+            {% with has_active=False %}
+                {% for rental in rentals %}
+                    {% if rental.status == 'active' or rental.status == 'confirmed' %}
+                        {% with has_active=True %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100">
+                                {% if rental.vehicle.image %}
+                                    <img src="{{ rental.vehicle.image.url }}" class="card-img-top" alt="{{ rental.vehicle.name }}">
+                                {% else %}
+                                    <img src="{% static 'img/default-car.jpg' %}" class="card-img-top" alt="{{ rental.vehicle.name }}">
+                                {% endif %}
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ rental.vehicle.name }}</h5>
+                                    <p class="card-text">
+                                        <small class="text-muted">{{ rental.vehicle.make }} {{ rental.vehicle.model }}</small>
+                                    </p>
+                                    <div class="mb-3">
+                                        <span class="badge bg-{{ rental.status }}">{{ rental.status|title }}</span>
+                                    </div>
+                                    <p class="mb-1">
+                                        <strong>Start:</strong> {{ rental.start_date|date:"F j, Y" }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>End:</strong> {{ rental.end_date|date:"F j, Y" }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Total Cost:</strong> ${{ rental.total_cost }}
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-transparent border-top-0">
+                                    <div class="d-grid">
+                                        <a href="{% url 'core:rental_detail' rental.pk %}" class="btn btn-primary">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endwith %}
+                    {% endif %}
+                {% endfor %}
+                {% if not has_active %}
+                    <div class="col">
+                        <div class="text-center py-4">
+                            <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                            <h5>No Active Rentals</h5>
+                            <p class="text-muted">You don't have any active rentals at the moment.</p>
+                            <a href="{% url 'core:vehicle_list' %}" class="btn btn-primary">Browse Vehicles</a>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+    </section>
+
+    <!-- Past Rentals -->
+    <section>
+        <h2 class="h4 mb-4">Past Rentals</h2>
+        <div class="row">
+            {% with has_past=False %}
+                {% for rental in rentals %}
+                    {% if rental.status == 'completed' or rental.status == 'cancelled' %}
+                        {% with has_past=True %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100">
+                                {% if rental.vehicle.image %}
+                                    <img src="{{ rental.vehicle.image.url }}" class="card-img-top" alt="{{ rental.vehicle.name }}">
+                                {% else %}
+                                    <img src="{% static 'img/default-car.jpg' %}" class="card-img-top" alt="{{ rental.vehicle.name }}">
+                                {% endif %}
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ rental.vehicle.name }}</h5>
+                                    <p class="card-text">
+                                        <small class="text-muted">{{ rental.vehicle.make }} {{ rental.vehicle.model }}</small>
+                                    </p>
+                                    <div class="mb-3">
+                                        <span class="badge bg-{{ rental.status }}">{{ rental.status|title }}</span>
+                                    </div>
+                                    <p class="mb-1">
+                                        <strong>Period:</strong><br>
+                                        {{ rental.start_date|date:"F j, Y" }} - {{ rental.end_date|date:"F j, Y" }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Total Cost:</strong> ${{ rental.total_cost }}
+                                    </p>
+                                    {% if rental.review %}
+                                        <div class="mt-3">
+                                            <strong>Your Rating:</strong>
+                                            <div class="rating">
+                                                {% for i in "12345" %}
+                                                    <i class="fas fa-star {% if i <= rental.review.rating %}text-warning{% endif %}"></i>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer bg-transparent border-top-0">
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'core:rental_detail' rental.pk %}" class="btn btn-primary">View Details</a>
+                                        {% if rental.status == 'completed' and not rental.review %}
+                                            <a href="{% url 'core:add_review' rental.pk %}" class="btn btn-outline-primary">Leave Review</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endwith %}
+                    {% endif %}
+                {% endfor %}
+                {% if not has_past %}
+                    <div class="col">
+                        <div class="text-center py-4">
+                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                            <h5>No Past Rentals</h5>
+                            <p class="text-muted">You haven't completed any rentals yet.</p>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        transition: transform 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .card-img-top {
+        height: 200px;
+        object-fit: cover;
+    }
+    
+    .rating {
+        color: #ccc;
+    }
+    
+    .rating .text-warning {
+        color: #ffc107 !important;
+    }
+    
+    .badge {
+        padding: 0.5rem 1rem;
+    }
+    
+    .badge.bg-pending { background-color: #FEF3C7 !important; color: #92400E !important; }
+    .badge.bg-confirmed { background-color: #BFDBFE !important; color: #1E40AF !important; }
+    .badge.bg-active { background-color: #A7F3D0 !important; color: #065F46 !important; }
+    .badge.bg-completed { background-color: #D1FAE5 !important; color: #064E3B !important; }
+    .badge.bg-cancelled { background-color: #FEE2E2 !important; color: #991B1B !important; }
+</style>
+{% endblock %} 

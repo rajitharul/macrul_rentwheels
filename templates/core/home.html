@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}RentWheels - Your Trusted Car Rental Service{% endblock %}
+
+{% block content %}
+<!-- Hero Section with Carousel -->
+<section class="hero-carousel">
+    <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+        <!-- Carousel Indicators -->
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+        </div>
+
+        <!-- Carousel Items -->
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="{% static 'img/cover1.jpg' %}" class="d-block w-100" alt="Luxury Cars">
+                <div class="carousel-caption">
+                    <h1 class="display-4 fw-bold mb-4">Find Your Perfect Ride</h1>
+                    <p class="lead mb-4">Choose from our wide selection of vehicles for any occasion.</p>
+                    <a href="{% url 'core:vehicle_list' %}" class="btn btn-light btn-lg">Browse Vehicles</a>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="{% static 'img/cover2.jpg' %}" class="d-block w-100" alt="Premium Service">
+                <div class="carousel-caption">
+                    <h1 class="display-4 fw-bold mb-4">Premium Service</h1>
+                    <p class="lead mb-4">Experience luxury and comfort with our premium fleet.</p>
+                    <a href="{% url 'core:vehicle_list' %}" class="btn btn-light btn-lg">View Fleet</a>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="{% static 'img/cover3.jpg' %}" class="d-block w-100" alt="Easy Booking">
+                <div class="carousel-caption">
+                    <h1 class="display-4 fw-bold mb-4">Easy Booking Process</h1>
+                    <p class="lead mb-4">Book your dream car in minutes with our simple process.</p>
+                    <a href="{% url 'core:vehicle_list' %}" class="btn btn-light btn-lg">Start Now</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carousel Controls -->
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+    </div>
+</section>
+
+<!-- Admin Quick Links (Only visible to admin users) -->
+{% if user.is_authenticated and user.is_staff %}
+<section class="py-4 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-4">Admin Quick Links</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Django Admin Links -->
+                            <div class="col-md-6">
+                                <h5 class="card-title">Django Admin</h5>
+                                <ul class="list-unstyled">
+                                    <li><a href="/admin/" class="btn btn-outline-primary btn-sm mb-2 w-100">Admin Dashboard</a></li>
+                                    <li><a href="/admin/core/vehicle/" class="btn btn-outline-primary btn-sm mb-2 w-100">Manage Vehicles</a></li>
+                                    <li><a href="/admin/core/rental/" class="btn btn-outline-primary btn-sm mb-2 w-100">Manage Rentals</a></li>
+                                    <li><a href="/admin/auth/user/" class="btn btn-outline-primary btn-sm w-100">Manage Users</a></li>
+                                </ul>
+                            </div>
+                            <!-- Custom Management Links -->
+                            <div class="col-md-6">
+                                <h5 class="card-title">Management Portal</h5>
+                                <ul class="list-unstyled">
+                                    <li><a href="{% url 'core:admin_dashboard' %}" class="btn btn-outline-success btn-sm mb-2 w-100">Management Dashboard</a></li>
+                                    <li><a href="{% url 'core:admin_vehicles' %}" class="btn btn-outline-success btn-sm mb-2 w-100">Vehicle Management</a></li>
+                                    <li><a href="{% url 'core:admin_rentals' %}" class="btn btn-outline-success btn-sm mb-2 w-100">Rental Management</a></li>
+                                    <li><a href="{% url 'core:register_vehicle' %}" class="btn btn-outline-success btn-sm w-100">Register New Vehicle</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Featured Vehicles -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-4">Featured Vehicles</h2>
+        <div class="vehicle-grid">
+            {% for vehicle in featured_vehicles %}
+                <div class="card vehicle-card fade-in">
+                    {% if vehicle.image %}
+                        <img src="{{ vehicle.image.url }}" class="card-img-top" alt="{{ vehicle.name }}">
+                    {% else %}
+                        <img src="{% static 'img/default-car.jpg' %}" class="card-img-top" alt="{{ vehicle.name }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ vehicle.name }}</h5>
+                        <p class="card-text">
+                            <small class="text-muted">{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</small>
+                        </p>
+                        <p class="card-text">
+                            <strong>${{ vehicle.daily_rate }}/day</strong>
+                        </p>
+                        <a href="{% url 'core:vehicle_detail' vehicle.pk %}" class="btn btn-primary">View Details</a>
+                    </div>
+                </div>
+            {% empty %}
+                <p class="text-center">No featured vehicles available at the moment.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Why Choose Us -->
+<section class="bg-light py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Why Choose RentWheels?</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="text-center">
+                    <i class="fas fa-car-side fa-3x text-primary mb-3"></i>
+                    <h4>Wide Selection</h4>
+                    <p>Choose from our diverse fleet of vehicles to match your needs and preferences.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <i class="fas fa-dollar-sign fa-3x text-primary mb-3"></i>
+                    <h4>Best Prices</h4>
+                    <p>Competitive rates and special offers to ensure you get the best value for your money.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <i class="fas fa-headset fa-3x text-primary mb-3"></i>
+                    <h4>24/7 Support</h4>
+                    <p>Our customer service team is always ready to assist you whenever you need help.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">How It Works</h2>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="circle-icon mb-3">1</div>
+                    <h5>Choose a Vehicle</h5>
+                    <p>Browse our selection and find your perfect ride</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="circle-icon mb-3">2</div>
+                    <h5>Book Online</h5>
+                    <p>Select your dates and complete the booking</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="circle-icon mb-3">3</div>
+                    <h5>Get Confirmation</h5>
+                    <p>Receive instant confirmation of your booking</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="circle-icon mb-3">4</div>
+                    <h5>Enjoy Your Ride</h5>
+                    <p>Pick up your vehicle and start your journey</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action -->
+<section class="bg-primary text-white py-5">
+    <div class="container text-center">
+        <h2 class="mb-4">Ready to Get Started?</h2>
+        <p class="lead mb-4">Join thousands of satisfied customers who trust RentWheels for their car rental needs.</p>
+        {% if user.is_authenticated %}
+            <a href="{% url 'core:vehicle_list' %}" class="btn btn-light btn-lg">Browse Vehicles</a>
+        {% else %}
+            <a href="{% url 'account_signup' %}" class="btn btn-light btn-lg me-3">Sign Up Now</a>
+            <a href="{% url 'account_login' %}" class="btn btn-outline-light btn-lg">Login</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .circle-icon {
+        width: 60px;
+        height: 60px;
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin: 0 auto;
+    }
+    
+    .hero-carousel {
+        position: relative;
+        margin-bottom: 3rem;
+    }
+
+    .carousel-item {
+        height: 600px;
+        background-color: #000;
+    }
+
+    .carousel-item img {
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.7;
+    }
+
+    .carousel-caption {
+        bottom: 50%;
+        transform: translateY(50%);
+        padding: 0 2rem;
+    }
+
+    .carousel-caption h1 {
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        margin-bottom: 1.5rem;
+    }
+
+    .carousel-caption p {
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        font-size: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .carousel-caption .btn {
+        font-size: 1.1rem;
+        padding: 0.75rem 2rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .carousel-caption .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .carousel-indicators {
+        bottom: 2rem;
+    }
+
+    .carousel-indicators button {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin: 0 6px;
+    }
+
+    .carousel-control-prev,
+    .carousel-control-next {
+        width: 5%;
+        opacity: 0.7;
+    }
+
+    .carousel-control-prev:hover,
+    .carousel-control-next:hover {
+        opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+        .carousel-item {
+            height: 400px;
+        }
+
+        .carousel-caption h1 {
+            font-size: 2rem;
+        }
+
+        .carousel-caption p {
+            font-size: 1rem;
+        }
+
+        .carousel-caption .btn {
+            font-size: 0.9rem;
+            padding: 0.5rem 1.5rem;
+        }
+    }
+</style>
+{% endblock %} 

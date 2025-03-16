@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load rental_filters %}
+
+{% block title %}Rental Details - RentWheels{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'core:my_rentals' %}">My Rentals</a></li>
+            <li class="breadcrumb-item active">Rental #{{ rental.id }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Rental Status Card -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="card-title mb-0">Rental Details</h2>
+                        <span class="rental-status {{ rental.status }}">{{ rental.status|title }}</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h5>Rental Period</h5>
+                            <p><strong>Start Date:</strong> {{ rental.start_date|date:"F j, Y, g:i a" }}</p>
+                            <p><strong>End Date:</strong> {{ rental.end_date|date:"F j, Y, g:i a" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Location</h5>
+                            <p><strong>Pickup:</strong> {{ rental.pickup_location }}</p>
+                            <p><strong>Drop-off:</strong> {{ rental.dropoff_location }}</p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h5>Cost Details</h5>
+                            <p><strong>Daily Rate:</strong> ${{ rental.vehicle.daily_rate }}</p>
+                            <p><strong>Total Cost:</strong> ${{ rental.total_cost }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Mileage</h5>
+                            {% if rental.mileage_start %}
+                                <p><strong>Start:</strong> {{ rental.mileage_start }} km</p>
+                            {% endif %}
+                            {% if rental.mileage_end %}
+                                <p><strong>End:</strong> {{ rental.mileage_end }} km</p>
+                                <p><strong>Total:</strong> {{ rental.mileage_end|sub:rental.mileage_start }} km</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if rental.status == 'pending' or rental.status == 'confirmed' %}
+                        <div class="mt-4 d-flex gap-2">
+                            {% if user.is_staff and rental.status == 'pending' %}
+                                <form method="post" action="{% url 'core:confirm_rental' rental.pk %}" 
+                                      onsubmit="return confirm('Are you sure you want to confirm this rental?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success">Confirm Rental</button>
+                                </form>
+                            {% endif %}
+                            <form method="post" action="{% url 'core:cancel_rental' rental.pk %}" 
+                                  onsubmit="return confirmCancellation();">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">Cancel Rental</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if rental.status == 'completed' and not rental.review %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Leave a Review</h5>
+                        <form method="post" action="{% url 'core:add_review' rental.pk %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label">Rating</label>
+                                <div class="rating-stars mb-2">
+                                    {% for i in "12345" %}
+                                        <i class="fas fa-star rating-star" onclick="setRating({{ i }})"></i>
+                                    {% endfor %}
+                                </div>
+                                <input type="hidden" name="rating" id="rating" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="comment" class="form-label">Comment</label>
+                                <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Submit Review</button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if rental.review %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Your Review</h5>
+                        <div class="rating mb-2">
+                            {% for i in "12345" %}
+                                <i class="fas fa-star {% if i <= rental.review.rating %}text-warning{% endif %}"></i>
+                            {% endfor %}
+                        </div>
+                        <p class="card-text">{{ rental.review.comment }}</p>
+                        <small class="text-muted">Posted on {{ rental.review.created_at|date:"F j, Y" }}</small>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Vehicle Details Card -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Vehicle Information</h5>
+                    {% if rental.vehicle.image %}
+                        <img src="{{ rental.vehicle.image.url }}" class="img-fluid rounded mb-3" alt="{{ rental.vehicle.name }}">
+                    {% else %}
+                        <img src="{% static 'img/default-car.jpg' %}" class="img-fluid rounded mb-3" alt="{{ rental.vehicle.name }}">
+                    {% endif %}
+                    <h6>{{ rental.vehicle.name }}</h6>
+                    <p class="text-muted">{{ rental.vehicle.make }} {{ rental.vehicle.model }} ({{ rental.vehicle.year }})</p>
+                    <p><strong>License Plate:</strong> {{ rental.vehicle.license_plate }}</p>
+                    <p><strong>Vehicle Type:</strong> {{ rental.vehicle.get_vehicle_type_display }}</p>
+                </div>
+            </div>
+
+            {% if rental.driver %}
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Driver Information</h5>
+                        <p><strong>Name:</strong> {{ rental.driver.user.get_full_name }}</p>
+                        <p><strong>License:</strong> {{ rental.driver.license_number }}</p>
+                        <p><strong>Experience:</strong> {{ rental.driver.experience_years }} years</p>
+                        <p><strong>Contact:</strong> {{ rental.driver.phone_number }}</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .rating-star {
+        cursor: pointer;
+        color: #ccc;
+        font-size: 1.5rem;
+    }
+    
+    .rating-star.active {
+        color: #ffc107;
+    }
+    
+    .rental-status {
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        font-weight: bold;
+    }
+    
+    .rental-status.pending { background-color: #FEF3C7; color: #92400E; }
+    .rental-status.confirmed { background-color: #BFDBFE; color: #1E40AF; }
+    .rental-status.active { background-color: #A7F3D0; color: #065F46; }
+    .rental-status.completed { background-color: #D1FAE5; color: #064E3B; }
+    .rental-status.cancelled { background-color: #FEE2E2; color: #991B1B; }
+</style>
+{% endblock %} 

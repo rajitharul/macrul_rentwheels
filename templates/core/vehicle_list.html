@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Available Vehicles - RentWheels{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" id="vehicle-filter-form" class="row g-3">
+                <div class="col-md-3">
+                    <label for="type" class="form-label">Vehicle Type</label>
+                    <select name="type" id="type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="sedan" {% if request.GET.type == 'sedan' %}selected{% endif %}>Sedan</option>
+                        <option value="suv" {% if request.GET.type == 'suv' %}selected{% endif %}>SUV</option>
+                        <option value="van" {% if request.GET.type == 'van' %}selected{% endif %}>Van</option>
+                        <option value="truck" {% if request.GET.type == 'truck' %}selected{% endif %}>Truck</option>
+                        <option value="luxury" {% if request.GET.type == 'luxury' %}selected{% endif %}>Luxury</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="min_price" class="form-label">Min Price</label>
+                    <input type="number" class="form-control" id="min_price" name="min_price" 
+                           value="{{ request.GET.min_price }}" min="0" step="10">
+                </div>
+                <div class="col-md-3">
+                    <label for="max_price" class="form-label">Max Price</label>
+                    <input type="number" class="form-control" id="max_price" name="max_price" 
+                           value="{{ request.GET.max_price }}" min="0" step="10">
+                </div>
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ request.GET.search }}" placeholder="Search vehicles...">
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="available" name="available" 
+                               value="true" {% if request.GET.available %}checked{% endif %}>
+                        <label class="form-check-label" for="available">
+                            Show only available vehicles
+                        </label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{% url 'core:vehicle_list' %}" class="btn btn-outline-secondary">Clear Filters</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <h2 class="mb-4">Available Vehicles</h2>
+    {% if vehicles %}
+        <div class="vehicle-grid">
+            {% for vehicle in vehicles %}
+                <div class="card vehicle-card fade-in">
+                    {% if vehicle.image %}
+                        <img src="{{ vehicle.image.url }}" class="card-img-top" alt="{{ vehicle.name }}">
+                    {% else %}
+                        <img src="{% static 'img/default-car.jpg' %}" class="card-img-top" alt="{{ vehicle.name }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ vehicle.name }}</h5>
+                        <p class="card-text">
+                            <small class="text-muted">{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</small>
+                        </p>
+                        <p class="card-text">
+                            <span class="badge {% if vehicle.is_available %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if vehicle.is_available %}Available{% else %}Not Available{% endif %}
+                            </span>
+                        </p>
+                        <p class="card-text">
+                            <strong>${{ vehicle.daily_rate }}/day</strong>
+                        </p>
+                        <div class="d-grid">
+                            <a href="{% url 'core:vehicle_detail' vehicle.pk %}" class="btn btn-primary">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-car fa-3x text-muted mb-3"></i>
+            <h3>No vehicles found</h3>
+            <p class="text-muted">Try adjusting your filters or search criteria</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .vehicle-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .vehicle-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-img-top {
+        height: 200px;
+        object-fit: cover;
+    }
+</style>
+{% endblock %} 
